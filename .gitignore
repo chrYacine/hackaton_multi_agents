@@ -83,8 +83,7 @@ __pypackages__/
 .env.local
 .env.dev
 .env.production
-.env.example
-.env
+
 # ============================
 # Coverage
 # ============================
@@ -94,3 +93,56 @@ htmlcov/
 *.cover
 coverage.xml
 
+# ============================
+# Test outputs & temporary files
+# ============================
+
+tests/*_output*.txt
+tests/*.log
+tests/*.mp3
+tests/$null
+
+# ============================
+# Documentation artifacts (local)
+# ============================
+
+# Keep these in repo for reference but ignore if needed
+# ETAT_SYSTEME.md
+# ROADMAP_V2.md
+
+# ============================
+# Database & State files
+# ============================
+
+*.db
+*.sqlite
+*.sqlite3
+redis-data/
+
+# ============================
+# Secrets & Credentials
+# ============================
+
+# CRITICAL: Never commit these
+.env
+*.pem
+*.key
+credentials.json
+token.json
+secrets/
+
+# ============================
+# OS specific
+# ============================
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
