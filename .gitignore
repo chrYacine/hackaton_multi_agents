@@ -107,8 +107,8 @@ tests/$null
 # ============================
 
 # Keep these in repo for reference but ignore if needed
-# ETAT_SYSTEME.md
-# ROADMAP_V2.md
+ETAT_SYSTEME.md
+ROADMAP_V2.md
 
 # ============================
 # Database & State files
@@ -130,6 +130,10 @@ redis-data/
 credentials.json
 token.json
 secrets/
+.env.example
+.env.*
+
+
 
 # ============================
 # OS specific
