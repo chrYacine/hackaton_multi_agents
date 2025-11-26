@@ -45,29 +45,21 @@ def test_end_to_end_flow():
     # For this test, we'll create a mock AgentSpec directly
     # In real flow, this would come from POST /api/interpret
     agent_spec = {
-        "request_id": str(uuid.uuid4()),
-        "user_intent": {
-            "action": "summarize_and_notify",
-            "source": "gmail",
-            "target": "slack",
-            "filters": {
-                "unread": True,
-                "time_range": "30m"
-            }
-        },
-        "agent_type": "EMAIL_SUMMARY_AGENT",
-        "inputs": {
-            "gmail_credentials": "user_oauth_token",
-            "email_filter": "is:unread newer_than:30m"
-        },
-        "outputs": {
-            "slack_webhook": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXX",
-            "slack_channel": "#email-summaries"
-        },
-        "constraints": {
-            "max_emails": 50,
-            "summary_format": "structured"
-        }
+        "agent_purpose": "Summarize unread emails and send to Slack",
+        "high_level_goal": "Summarize emails",
+        "inputs": [
+            {"name": "gmail_credentials", "type": "string", "description": "User OAuth token"},
+            {"name": "email_filter", "type": "string", "description": "Filter for emails"}
+        ],
+        "outputs": [
+            {"name": "slack_webhook", "type": "string", "description": "Slack webhook URL"},
+            {"name": "slack_channel", "type": "string", "description": "Slack channel"}
+        ],
+        "constraints": [
+            "max_emails: 50",
+            "summary_format: structured"
+        ],
+        "agent_type": "EMAIL_SUMMARY_AGENT"  # Optional hint for Orchestrator
     }
     
     print(f"Generated AgentSpec:")
@@ -79,6 +71,7 @@ def test_end_to_end_flow():
     
     orchestrate_request = {
         "request_id": str(uuid.uuid4()),
+        "user_id": "yacine",
         "agent_spec": agent_spec
     }
     
@@ -109,12 +102,13 @@ def test_end_to_end_flow():
     
     debug_request = {
         "request_id": str(uuid.uuid4()),
-        "agent_spec": agent_spec
+        "user_id": "e2e_test",
+        "spec": agent_spec
     }
     
     print("📤 Calling Debug API...")
     response = requests.post(
-        f"{BASE_URL}/api/debug",
+        f"{BASE_URL}/api/debug/analyze",
         json=debug_request
     )
     
@@ -124,34 +118,59 @@ def test_end_to_end_flow():
     
     debug_result = response.json()
     
-    print(f"\n✅ Debug Report:")
-    print(f"   Status: {debug_result['status']}")
-    print(f"   Errors: {len(debug_result.get('errors', []))}")
-    print(f"   Warnings: {len(debug_result.get('warnings', []))}")
+    # New schema: summary + issues (not status)
+    summary = debug_result.get("summary", "(no summary)")
+    issues = debug_result.get("issues", [])
+    suggested_fixes = debug_result.get("suggested_fixes", [])
     
-    if debug_result['status'] != 'valid':
-        print(f"\n⚠️  AgentSpec has validation issues:")
-        for error in debug_result.get('errors', []):
-            print(f"      ❌ {error['message']}")
-        for warning in debug_result.get('warnings', []):
-            print(f"      ⚠️  {warning['message']}")
-        
-        # For this test, we'll continue anyway
-        print("\n   Continuing with execution despite warnings...")
+    errors = [i for i in issues if i.get("severity") == "error"]
+    warnings = [i for i in issues if i.get("severity") == "warning"]
+    
+    print(f"\n✅ Debug Report:")
+    print(f"   Summary       : {summary}")
+    print(f"   Errors        : {len(errors)}")
+    print(f"   Warnings      : {len(warnings)}")
+    print(f"   Suggestions   : {len(suggested_fixes)}")
+    
+    if errors:
+        print(f"\n⚠️  AgentSpec has validation errors:")
+        for error in errors:
+            print(f"      ❌ {error.get('description', 'N/A')}")
+    
+    if warnings:
+        print(f"\n⚠️  AgentSpec has validation warnings:")
+        for warning in warnings:
+            print(f"      ⚠️  {warning.get('description', 'N/A')}")
     
     # Step 5: Execution Service - Execute Plan
     print_section("Step 5: Execution Service - Execute Plan")
     
-    # First, test with dry_run
+    # First, approve the plan
+    plan_id = execution_plan["plan_id"]
+    print(f"✍️  Approving plan {plan_id}...\n")
+    
+    approve_response = requests.post(
+        f"{BASE_URL}/api/orchestrate/{plan_id}/approve",
+        json={"approved_by": "e2e_test"}
+    )
+    
+    if approve_response.status_code != 200:
+        print(f"❌ Plan approval failed: {approve_response.text}")
+        return False
+    
+    approved_result = approve_response.json()
+    print(f"✅ Plan approved by e2e_test\n")
+    
+    # Now test with dry_run
     print("🔍 Testing with DRY RUN mode first...\n")
     
     execution_request = {
         "request_id": str(uuid.uuid4()),
-        "agent_instance": agent_instance,
-        "execution_plan": execution_plan,
-        "dry_run": True,
-        "approved_by": "yacine",
-        "approval_mode": "manual"
+        "correlation_id": approved_result["correlation_id"],
+        "agent_instance": approved_result["agent_instance"],
+        "execution_plan": approved_result["execution_plan"],
+        "approval": approved_result["approval"],
+        "dry_run": True
     }
     
     response = requests.post(

@@ -143,12 +143,14 @@ class Orchestrator:
                     step_id="1",
                     name="Analyze Request",
                     description="Analyze generic request",
+                    tool="llm_summarize",
                     is_critical=True,
                 ),
                 ExecutionStep(
                     step_id="2",
                     name="Execute Logic",
                     description="Execute generic logic",
+                    tool="llm_summarize",
                     is_critical=True,
                 ),
             ]

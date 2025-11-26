@@ -27,50 +27,35 @@ def print_status(agent: str, status: str, details: str = ""):
         print(f"   → {details}")
 
 
+
+
 def test_agent_1_chat():
     """Test Agent 1 - Chat Service."""
     print_header("AGENT 1 - CHAT SERVICE", "💬")
     
     try:
-        # Test health
-        response = requests.get(f"{BASE_URL}/api/chat/health", timeout=5)
-        if response.status_code == 200:
-            print_status("Chat Service", "OK", "Service is healthy")
-        else:
-            print_status("Chat Service", "FAIL", f"Health check failed: {response.status_code}")
-            return False
+        # Test chat endpoint directly (no health check available)
+        print("   ℹ️  Testing /api/chat endpoint...")
         
-        # Test conversation creation
-        conv_data = {
+        chat_data = {
             "user_id": "test_user",
-            "initial_message": "Bonjour, je veux tester le système"
+            "message": "Bonjour, je veux tester le système"
         }
-        response = requests.post(f"{BASE_URL}/api/chat/conversations", json=conv_data, timeout=5)
+        
+        response = requests.post(
+            f"{BASE_URL}/api/chat",
+            json=chat_data,
+            timeout=10
+        )
         
         if response.status_code == 200:
             result = response.json()
-            conv_id = result.get("conversation_id")
-            print_status("Conversation Creation", "OK", f"ID: {conv_id}")
-            
-            # Test sending message
-            msg_data = {
-                "message": "Test message",
-                "user_id": "test_user"
-            }
-            response = requests.post(
-                f"{BASE_URL}/api/chat/conversations/{conv_id}/messages",
-                json=msg_data,
-                timeout=5
-            )
-            
-            if response.status_code == 200:
-                print_status("Message Sending", "OK", "Chat responds correctly")
-                return True
-            else:
-                print_status("Message Sending", "FAIL", f"Status: {response.status_code}")
-                return False
+            print_status("Chat Service", "OK", "Response received")
+            print(f"   Response: {result.get('message', '')[:50]}...")
+            return True
         else:
-            print_status("Conversation Creation", "FAIL", f"Status: {response.status_code}")
+            print_status("Chat Service", "FAIL", f"Status: {response.status_code}")
+            print(f"   Error: {response.text[:200]}")
             return False
             
     except requests.exceptions.ConnectionError:
@@ -86,34 +71,41 @@ def test_agent_2_interpretation():
     print_header("AGENT 2 - INTERPRETATION SERVICE", "🧠")
     
     try:
-        # Test interpretation endpoint
+        # Test interpretation endpoint (Expects Form data)
         interpret_data = {
-            "request_id": str(uuid.uuid4()),
-            "user_message": "Résume mes emails non lus et envoie sur Slack",
-            "conversation_history": []
+            "user_id": "test_user",
+            "text": "Résume mes emails non lus et envoie sur Slack",
+            "conversation_id": str(uuid.uuid4())
         }
         
         response = requests.post(
             f"{BASE_URL}/api/interpret",
-            json=interpret_data,
+            data=interpret_data,  # Use data for Form/Multipart
             timeout=10
         )
         
         if response.status_code == 200:
             result = response.json()
-            agent_spec = result.get("agent_spec")
+            agent_spec = result.get("spec") # AgentRequest has 'spec', not 'agent_spec' directly? Let's check model.
+            # Wait, AgentRequest has 'spec'. But previous test code used 'agent_spec'.
+            # Let's check what service returns.
+            # service.process_request returns AgentRequest.
+            # AgentRequest has 'spec'.
+            
+            if not agent_spec and "agent_spec" in result:
+                agent_spec = result["agent_spec"] # Fallback if model changed
             
             if agent_spec:
                 print_status("Interpretation", "OK", f"AgentSpec generated")
                 print(f"   Agent Type: {agent_spec.get('agent_type', 'N/A')}")
-                print(f"   User Intent: {agent_spec.get('user_intent', {}).get('action', 'N/A')}")
+                # agent_purpose is in AgentSpec
+                print(f"   Purpose: {agent_spec.get('agent_purpose', 'N/A')}")
                 
                 # Check required fields
                 missing = []
-                if not agent_spec.get("agent_type"):
-                    missing.append("agent_type")
-                if not agent_spec.get("user_intent"):
-                    missing.append("user_intent")
+                # AgentSpec has agent_purpose, high_level_goal, inputs, outputs
+                if not agent_spec.get("agent_purpose"):
+                    missing.append("agent_purpose")
                 
                 if missing:
                     print_status("AgentSpec Validation", "WARNING", f"Missing fields: {missing}")
@@ -122,7 +114,8 @@ def test_agent_2_interpretation():
                 
                 return agent_spec
             else:
-                print_status("Interpretation", "FAIL", "No AgentSpec in response")
+                print_status("Interpretation", "FAIL", "No spec in response")
+                print(f"   Response keys: {result.keys()}")
                 return None
         else:
             print_status("Interpretation", "FAIL", f"Status: {response.status_code}")
@@ -145,6 +138,7 @@ def test_agent_3_orchestrator(agent_spec):
     try:
         orchestrate_data = {
             "request_id": str(uuid.uuid4()),
+            "user_id": "test_user",  # Added user_id
             "agent_spec": agent_spec
         }
         
@@ -171,12 +165,9 @@ def test_agent_3_orchestrator(agent_spec):
                 
                 return result  # Return full result including approval and correlation_id
             else:
-                print_status("Orchestration", "FAIL", "Missing agent_instance or execution_plan")
+                print_status("Orchestration", "FAIL", f"Status: {response.status_code}")
+                print(f"   Error: {response.text[:200]}")
                 return None
-        else:
-            print_status("Orchestration", "FAIL", f"Status: {response.status_code}")
-            print(f"   Error: {response.text[:200]}")
-            return None
             
     except Exception as e:
         print_status("Orchestrator Service", "FAIL", str(e))
@@ -192,13 +183,16 @@ def test_agent_debugger(agent_spec):
         return None
     
     try:
+        # Construct AgentRequest for Debug Service
         debug_data = {
             "request_id": str(uuid.uuid4()),
-            "agent_spec": agent_spec
+            "user_id": "test_user",
+            "spec": agent_spec,
+            "status": "created"
         }
         
         response = requests.post(
-            f"{BASE_URL}/api/debug",
+            f"{BASE_URL}/api/debug/analyze",  # Corrected endpoint
             json=debug_data,
             timeout=10
         )

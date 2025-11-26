@@ -101,15 +101,18 @@ tests/*_output*.txt
 tests/*.log
 tests/*.mp3
 tests/$null
-
+rapports_test/
+rapports_
 # ============================
 # Documentation artifacts (local)
 # ============================
 
 # Keep these in repo for reference but ignore if needed
-# ETAT_SYSTEME.md
-# ROADMAP_V2.md
-
+ETAT_SYSTEME.md
+ROADMAP_V2.md
+diagnostic*/
+orchestrator*/
+ROADMAP_V2.md
 # ============================
 # Database & State files
 # ============================
@@ -130,7 +133,8 @@ redis-data/
 credentials.json
 token.json
 secrets/
-
+.env.* 
+.env.example
 # ============================
 # OS specific
 # ============================

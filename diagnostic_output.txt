@@ -1,0 +1,118 @@
+﻿
+================================================================================
+­ƒöì DIAGNOSTIC COMPLET - SYST├êME MULTI-AGENT
+================================================================================
+
+Date: 2025-11-26 23:04:09
+Base URL: http://localhost:8000
+
+Ce script va tester tous les agents dans l'ordre du pipeline.
+
+
+================================================================================
+­ƒÆ¼ AGENT 1 - CHAT SERVICE
+================================================================================
+
+   Ôä╣´©Å  Testing /api/chat endpoint...
+Ô£à Chat Service: OK
+   ÔåÆ Response received
+   Response: Bienvenue ! Je suis ravi de pouvoir t'aider ├á test...
+
+================================================================================
+­ƒºá AGENT 2 - INTERPRETATION SERVICE
+================================================================================
+
+Ô£à Interpretation: OK
+   ÔåÆ AgentSpec generated
+   Agent Type: N/A
+   Purpose: R├®sumer les emails non lus et les envoyer sur Slack
+Ô£à AgentSpec Validation: OK
+   ÔåÆ All required fields present
+
+================================================================================
+­ƒÄ» AGENT 3 - ORCHESTRATOR SERVICE
+================================================================================
+
+Ô£à Orchestration: OK
+   ÔåÆ Plan generated
+   Agent ID: N/A
+   Plan ID: 01047850-2c85-4702-8d6d-e64645f3eec2
+   Steps: 2
+      1. Analyze Request (llm_summarize)
+      2. Execute Logic (llm_summarize)
+
+================================================================================
+­ƒÉø AGENT DEBUGGER - DEBUG SERVICE
+================================================================================
+
+Ô£à Debug Validation: OK
+   ÔåÆ Status: None
+   Errors: 0
+   Warnings: 0
+
+================================================================================
+ÔÜÖ´©Å AGENT 4 - EXECUTION SERVICE
+================================================================================
+
+Ô£à Execution Health: OK
+   ÔåÆ Status: healthy
+Ô£à Tools Registry: OK
+   ÔåÆ 4 tools available
+   Tools: gmail_auth, gmail_fetch, slack_post, llm_summarize
+
+   Ô£ì´©Å  Approving plan 01047850-2c85-4702-8d6d-e64645f3eec2...
+ÔØî Execution Service: FAIL
+   ÔåÆ HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/orchestrate/01047850-2c85-4702-8d6d-e64645f3eec2/approve (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001885910BFB0>: Failed to establish a new connection: [WinError 10061] Aucune connexion nÔÇÖa pu ├¬tre ├®tablie car lÔÇÖordinateur cible lÔÇÖa express├®ment refus├®e'))
+
+================================================================================
+­ƒôï R├ëSUM├ë DU DIAGNOSTIC
+================================================================================
+
+
+R├®sultats: 4/5 agents fonctionnels
+
+Ô£à Agent 1 Chat: OK
+Ô£à Agent 2 Interpretation: OK
+Ô£à Agent 3 Orchestrator: OK
+Ô£à Agent Debugger: OK
+ÔØî Agent 4 Executor: FAIL
+
+================================================================================
+­ƒôè ANALYSE DES MANQUES
+================================================================================
+
+
+­ƒö┤ Critiques:
+   1. Int├®grations r├®elles (Gmail, Groq, Slack) - actuellement en mock
+   2. Gestion des secrets (credentials en dur dans le code)
+   3. Persistance des ex├®cutions (pas de base de donn├®es)
+
+­ƒö┤ Importants:
+   1. Correlation ID global pour tracer tout le pipeline
+   2. Politiques d'erreur configurables (retry, continue, stop)
+   3. Validation d'approbation stricte (actuellement juste un warning)
+   4. Tests de contrat entre services
+
+­ƒö┤ Am├®liorations:
+   1. UI Console pour approuver les plans
+   2. Monitoring et m├®triques (dur├®e, taux de succ├¿s)
+   3. Logs structur├®s JSON
+   4. Timeouts et limites de s├®curit├®
+   5. Versioning des sch├®mas (schema_version)
+   6. Ex├®cution parall├¿le des steps ind├®pendants
+
+================================================================================
+­ƒÆí RECOMMANDATIONS
+================================================================================
+
+ÔÜá´©Å  Certains agents ne fonctionnent pas correctement.
+
+­ƒöº Actions ├á prendre:
+   1. V├®rifier que le serveur est d├®marr├®: python run_api.py
+   2. V├®rifier les logs du serveur pour les erreurs
+   3. Tester chaque agent individuellement
+
+================================================================================
+­ƒÅü DIAGNOSTIC TERMIN├ë
+================================================================================
+
