@@ -83,8 +83,7 @@ __pypackages__/
 .env.local
 .env.dev
 .env.production
-.env.example
-.env
+
 # ============================
 # Coverage
 # ============================
